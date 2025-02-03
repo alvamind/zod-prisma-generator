@@ -9,6 +9,7 @@ import {
 import path from 'path';
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'bun:test';
 import { generate } from '../src/generator';
+import { $ } from 'bun';
 
 const outputDir = path.join(process.cwd(), 'output');
 const testSchemaDir = path.join(process.cwd(), 'test-schema');
@@ -28,6 +29,7 @@ const setupTestSchema = (schema: string) => {
 
 describe('Zod Schema Generator', () => {
   beforeAll(() => {
+    $`clear`
     mkdirSync(testSchemaDir, { recursive: true });
     writeFileSync(
       testSchemaPath,

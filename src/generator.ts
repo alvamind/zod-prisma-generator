@@ -149,33 +149,52 @@ function getZodType(
   const isModel = allModels.some((m) => m.name === cleanType && !m.isType);
   const isType = types.some((t) => t.name === cleanType);
 
+  let zodType: string;
 
   switch (cleanType) {
     case 'String':
-      return 'z.string()';
+      zodType = 'z.string()';
+      break;
     case 'Int':
     case 'Float':
-      return 'z.number()';
+      zodType = 'z.number()';
+      break;
     case 'Boolean':
-      return 'z.boolean()';
+      zodType = 'z.boolean()';
+      break;
     case 'DateTime':
-      return 'z.date()';
+      zodType = 'z.date()';
+      break;
     case 'Json':
-      return 'z.any()';
+      zodType = 'z.any()';
+      break;
     case 'Bytes':
-      return 'z.instanceof(Buffer)';
+      zodType = 'z.instanceof(Buffer)';
+      break;
     case 'Decimal':
-      return 'z.string()';
+      zodType = 'z.string()';
+      break;
     case 'BigInt':
-      return 'z.bigint()';
+      zodType = 'z.bigint()';
+      break;
     default:
-      if (isEnum) return `${cleanType}Schema`;
-      if (isModel || isType) {
+      if (isEnum) {
+        zodType = `${cleanType}Schema`;
+      } else if (isModel || isType) {
         if (cleanType !== currentModel.name) {
           imports.add(cleanType);
         }
-        return `z.lazy(() => ${cleanType}Schema)`;
+        zodType = `z.lazy(() => ${cleanType}Schema)`;
+      } else {
+        zodType = 'z.string()'; // Default to string for unsupported types
       }
-      return 'z.string()'; // Default to string for unsupported types
+      break;
   }
+
+  // Handle @nullable
+  if (field.attributes.includes('nullable')) {
+    zodType += '.nullable()';
+  }
+
+  return zodType;
 }
