@@ -1,0 +1,23 @@
+{
+  "name": "zod-prisma-generator",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@mrleebo/prisma-ast": "^0.12.1",
+    "alvamind-tools": "^1.0.23",
+    "zod": "^3.24.1"
+  },
+  "scripts": {
+    "source": "generate-source output=documentation.md exclude=dist/,node_modules/,.git/",
+    "commit": "commit",
+    "clean": "clean",
+    "split-code": "split-code source=combined.ts markers=src/,lib/ outputDir=./output",
+    "publish-npm": "publish-npm patch"
+  }
+}
