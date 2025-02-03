@@ -1,4 +1,3 @@
-// zod-prisma-generator/src/generator.ts
 import { getSchema } from '@mrleebo/prisma-ast';
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
@@ -8,6 +7,7 @@ type ModelDefinition = {
   name: string;
   fields: FieldDefinition[];
   isType: boolean;
+  comments: string[];
 };
 
 type FieldDefinition = {
@@ -16,6 +16,7 @@ type FieldDefinition = {
   isArray: boolean;
   isOptional: boolean;
   attributes: string[];
+  comment?: string;
 };
 
 type EnumDefinition = {
@@ -58,10 +59,15 @@ export function generate(prismaSchemaPath: string) {
 }
 
 function processObject(node: any, isType: boolean): ModelDefinition {
+  const properties = node.properties || [];
+  const comments = properties
+    .filter((prop: any) => prop.type === 'comment')
+    .map((comment: any) => comment.text);
+
   return {
     name: node.name,
     isType,
-    fields: node.properties
+    fields: properties
       .filter((prop: any) => prop.type === 'field')
       .map((prop: any) => ({
         name: prop.name,
@@ -69,7 +75,9 @@ function processObject(node: any, isType: boolean): ModelDefinition {
         isArray: prop.array || false,
         isOptional: prop.optional || false,
         attributes: (prop.attributes || []).map((a: any) => a.name),
+        comment: prop.comment,
       })),
+    comments
   };
 }
 
@@ -107,14 +115,20 @@ function generateModel(
   const imports = new Set<string>();
   let content = `import { z } from 'zod'\n`;
 
+  if (model.comments && model.comments.length > 0) {
+    content += model.comments.map(comment => `${comment}\n`).join('');
+  }
+
   const fields = model.fields
     .map((field) => {
+      if (field.comment) {
+        content += `  ${field.comment}\n`;
+      }
       let zodType = getZodType(field.type, field, model, allModels, enums, types, imports);
 
       if (field.isArray) zodType = `z.array(${zodType})`;
       if (field.isOptional) zodType += '.nullish()';
 
-      // Handle @unique attribute
       if (field.attributes.includes('unique')) {
         zodType += `.refine(val => true, { message: "Must be unique" })`;
       }
@@ -125,11 +139,14 @@ function generateModel(
 
   // Add imports
   imports.forEach((importName) => {
-    content += `import { ${importName}Schema } from './${importName}'\n`;
-  });
+    content += `import { ${importName}Schema } from './${importName}'\n`
+  })
+
+  // here is where we fix it. Check if fields is empty. If so, use an empty object, else, make it as it is.
+  const objectContent = fields ? `{\n${fields}\n}` : `{}`;
 
   content +=
-    `\nexport const ${model.name}Schema = z.object({\n${fields}\n})\n\n` +
+    `\nexport const ${model.name}Schema = z.object(${objectContent})\n\n` +
     `export type ${model.name} = z.infer<typeof ${model.name}Schema>\n`;
 
   writeFileSync(path.join(outputDir, `${model.name}.ts`), content);

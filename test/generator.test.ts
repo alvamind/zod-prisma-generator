@@ -396,17 +396,17 @@ export type MappedEnum = z.infer<typeof MappedEnumSchema>`
   // 15. Custom Type Comments
   it('should preserve comments', () => {
     setupTestSchema(`
-      /// User model comment
-      model Commented {
-        /// Field comment
-        id Int @id
-      }
-    `);
+        /// User model comment
+        model Commented {
+          /// Field comment
+          id Int @id
+        }
+      `);
 
     generate(testSchemaPath);
     const schema = readOutput('Commented.ts')?.trim();
-    expect(schema).toContain('// User model comment');
-    expect(schema).toContain('// Field comment');
+    expect(schema).toContain('/// User model comment');
+    expect(schema).toContain('/// Field comment');
   });
 
   // 16. Type Aliases
